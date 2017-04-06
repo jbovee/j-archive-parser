@@ -6,34 +6,34 @@ import re
 
 seasons = requests.get('http://j-archive.com/listseasons.php')
 
-soupseasons = BeautifulSoup(seasons.text, 'html.parser')
+soupSeasons = BeautifulSoup(seasons.text, 'html.parser')
 
 r = re.compile(r'showseason\.php\?season=')
 
-seasonlinks = []
+seasonLinks = []
 
-for link in soupseasons.find_all('a'):
+for link in soupSeasons.find_all('a'):
 	reg = r.match(link.get('href'))
 	if reg:
-		seasonlinks.append("http://j-archive.com/"+link.get('href'))
+		seasonLinks.append("http://j-archive.com/"+link.get('href'))
 
 r = re.compile(r'http:\/\/www\.j-archive\.com\/showgame\.php\?game_id=')
 
-for season in seasonlinks[::-1][-1:]:
+for season in seasonLinks[::-1][-1:]:
 	episodes = requests.get(season)
-	soupepisodes = BeautifulSoup(episodes.text, 'html.parser')
+	soupEpisodes = BeautifulSoup(episodes.text, 'html.parser')
 
-	episodelinks = []
+	episodeLinks = []
 
-	for link in soupepisodes.find_all('a'):
+	for link in soupEpisodes.find_all('a'):
 		reg = r.match(link.get('href'))
 		if reg:
-			episodelinks.append(link.get('href'))
+			episodeLinks.append(link.get('href'))
 
-	for episodelink in episodelinks:
-		episode = requests.get(episodelink)
-		soupepisode = BeautifulSoup(episode.text, 'html.parser')
+	for episodeLink in episodeLinks:
+		episode = requests.get(episodeLink)
+		soupEpisode = BeautifulSoup(episode.text, 'html.parser')
 
-		#print(soupepisode.find(id='game_title'))
+		#print(soupEpisode.find(id='game_title'))
 
-		isBlank = True if soupepisode.find(id='jeopardy_round') is None else False
+		isBlank = True if soupEpisode.find(id='jeopardy_round') is None else False
