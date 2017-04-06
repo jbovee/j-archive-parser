@@ -30,12 +30,13 @@ for season in seasonlinks[::-1][-1:]:
 		if reg:
 			episodelinks.append(link.get('href'))
 
-	for episode in episodelinks:
-		#Get episode page html
-		#Search for jeopardy_round/double_jeopardy_round/final_jeopardy_round divs to check if page has no questions
-		#Jeopardy round
-		#For each category collect info about each question (question, answer, value, category, round, order picked, airdate, episode number, more?) and write out to file
-		#Same style for double jeopardy round
-		#Get final jeopardy round
-		## Maybe identify between regular questions and daily doubles and mark how much was wagered
-		print(episode)
+	for episodelink in episodelinks:
+		episode = requests.get(episodelink)
+		soupepisode = BeautifulSoup(episode.text, 'html.parser')
+
+		#print(soupepisode.find(id='game_title'))
+
+		if soupepisode.find(id='jeopardy_round') is None:
+			print('Blank')
+		else:
+			print(soupepisode.find(id='jeopardy_round').h2)
