@@ -36,7 +36,4 @@ for season in seasonlinks[::-1][-1:]:
 
 		#print(soupepisode.find(id='game_title'))
 
-		if soupepisode.find(id='jeopardy_round') is None:
-			print('Blank')
-		else:
-			print(soupepisode.find(id='jeopardy_round').h2)
+		isBlank = True if soupepisode.find(id='jeopardy_round') is None else False
