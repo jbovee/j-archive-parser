@@ -32,7 +32,7 @@ def get_all_seasons():
 	seasons = [r.search(link.get('href')).group(0).split('=')[1] for link in soupSeasons.find_all('a') if r2.match(link.get('href'))]
 
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
-	for season in seasons[::-1][7:8]:
+	for season in seasons[::-1]:
 		parse_season(season)
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
 
