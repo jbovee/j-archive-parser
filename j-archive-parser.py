@@ -32,7 +32,7 @@ def get_all_seasons():
 	seasons = [r.search(link.get('href')).group(0).split('=')[1] for link in soupSeasons.find_all('a') if r2.match(link.get('href'))]
 
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
-	for season in seasons[::-1]:
+	for season in seasons[::-1][7:8]:
 		parse_season(season)
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
 
@@ -61,7 +61,7 @@ def parse_season(season):
 				print('Writing episode ' + str(i+1) + ' out of ' + str(len(episodeIds)) + ' to season ' + season, end='\r')
 				for round in ep:
 					for question in round:
-						question.insert(2, extraInfo[i].encode('utf-8').strip('\n')) if extraInfo[i] else question.insert(2, '')
+						question.insert(2, extraInfo[i].encode('utf-8').replace('\n','').strip()) if extraInfo[i] else question.insert(2, '')
 						#print(question)
 						episodeWriter.writerow(question)
 	print()
