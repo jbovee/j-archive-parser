@@ -45,7 +45,6 @@ def get_all_seasons():
 			f = executor.submit(parse_season, season)
 
 def parse_season(season):
-	print('Starting season {}'.format(season))
 	episodesPage = requests.get('http://j-archive.com/showseason.php?season='+season)
 	soupEpisodes = BeautifulSoup(episodesPage.text, 'lxml')
 	r = re.compile(r'game_id=[0-9]+')
@@ -59,22 +58,28 @@ def parse_season(season):
 	seasonFile = "j-archive-season-%s.csv" % season
 	saveFile = os.path.join(FOLDER, seasonFile)
 
+	widgets = ['Season {}'.format(season),
+				progressbar.Bar(left='[', marker='#', right=']'),
+				progressbar.FormatLabel(' [%(value)i/%(max)i] ['),
+				progressbar.Percentage(),
+				progressbar.FormatLabel('] [%(elapsed)s] [')
+				]
+
+	bar = progressbar.ProgressBar(widget=widgets, maxval=len(episodeIds)).start()
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
 	with open(saveFile,'w',newline='',encoding='utf-8') as csvfile:
 		episodeWriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 		episodeWriter.writerow(['epNum', 'airDate', 'extra_info', 'round_name', 'coord', 'category', 'order', 'value', 'daily_double', 'question', 'answer', 'correctAttempts', 'wrongAttempts'])
 		for i in range(len(episodeIds)):
-			#sys.stdout.write('\rSeason {}: Parsing episode {}/{}'.format(season, i, len(episodeIds)))
-			#sys.stdout.flush()
 			ep = parse_episode(episodeIds[i])
+			bar.update(i)
 			if ep:
 				ep = [[[clueElement for clueElement in clue] for clue in round] for round in ep]
 				for round in ep:
 					for question in round:
 						question.insert(2, extraInfo[i].replace('\n','').strip()) if extraInfo[i] else question.insert(2, '')
-						#print(question)
 						episodeWriter.writerow(question)
-	print('Season {} complete'.format(season))
+	bar.finish()
 	time.sleep(SECONDS_BETWEEN_REQUESTS)
 
 def parse_episode(episodeLink):
