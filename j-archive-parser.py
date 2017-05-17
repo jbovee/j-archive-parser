@@ -125,7 +125,7 @@ def parse_round(round, table, epNum, airDate):
 			if exists:
 				coord = tuple([int(x) for x in (re.search(r'[0-9]_[0-9]', clue.find('td', class_='clue_text').get('id')).group(0).split('_'))])
 				valueRaw = clue.find('td', class_=re.compile('clue_value')).text
-				value = valueRaw.lstrip('D: $')
+				value = valueRaw.lstrip('D: $').replace(',','')
 				question = clue.find('td', class_='clue_text').text
 				answer = BeautifulSoup(clue.find('div', onmouseover=True).get('onmouseover'), 'lxml').find('em', class_='correct_response').text
 				daily_double = True if re.match(r'DD:', valueRaw) else False
