@@ -25,7 +25,13 @@ def get_episode_list(season):
 	epNumRe = re.compile(r'\#\d{1,4}')
 	epDateRe = re.compile(r'\d{4}-\d{2}-\d{2}')
 	episodes = [row.find_all('td') for row in seasonSoup.find_all('tr')]
-	return [{"epNum": epNumRe.search(episode[0].text.strip()).group(0), "date": epDateRe.search(episode[0].text.strip()).group(0), "contestants": episode[1].text.strip(), "info": episode[2].text.strip()} for episode in episodes]
+	return [{
+				"epNum": epNumRe.search(episode[0].text.strip()).group(0),
+				"date": epDateRe.search(episode[0].text.strip()).group(0),
+				"contestants": episode[1].text.strip(),
+				"info": episode[2].text.strip()
+			}
+			for episode in episodes][::-1]
 
 if __name__=="__main__":
 	main()
