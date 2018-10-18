@@ -24,10 +24,12 @@ def get_episode_list(season):
 	seasonSoup = BeautifulSoup(seasonPage.text, 'lxml')
 	epNumRe = re.compile(r'\#(\d{1,4})')
 	epDateRe = re.compile(r'\d{4}-\d{2}-\d{2}')
+	gameIdRe = re.compile(r'game_id=(\d+)')
 	episodes = [row.find_all('td') for row in seasonSoup.find_all('tr')]
 	return [{
 				"season": season,
 				"epNum": epNumRe.search(episode[0].text.strip()).group(1),
+				"gameId": eIdRe.search(episode[0].a['href']).group(1),
 				"date": epDateRe.search(episode[0].text.strip()).group(0),
 				"contestants": episode[1].text.strip(),
 				"info": episode[2].text.strip()
