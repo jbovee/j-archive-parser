@@ -48,5 +48,25 @@ def sys_print(string):
 	sys.stdout.write("{}\n".format(string))
 	sys.stdout.flush()
 
+def write_to_csv(filename, data):
+	with open(filename,'w',newline='',encoding='utf-8') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		keys = data[0].keys()
+		writer.writerow(list(keys))
+		for d in data:
+			writer.writerow([d[key] for key in keys])
+
+def read_from_csv(filename):
+	result = []
+	with open(filename,'r',newline='',encoding='utf-8') as csvfile:
+		reader = csv.reader(csvfile)
+		headers = next(reader, None)
+		for row in reader:
+			d = {}
+			for h, v in zip(headers, row):
+				d[h] = v
+			result.append(d)
+	return result
+
 if __name__=="__main__":
 	main()
