@@ -36,5 +36,9 @@ def get_episode_list(season):
 			}
 			for episode in episodes][::-1]
 
+def sys_print(string):
+	sys.stdout.write("{}\n".format(string))
+	sys.stdout.flush()
+
 if __name__=="__main__":
 	main()
