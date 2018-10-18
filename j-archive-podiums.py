@@ -36,6 +36,14 @@ def get_episode_list(season):
 			}
 			for episode in episodes][::-1]
 
+def get_episode_range(start,end):
+	episodes = []
+	for season in range(start,end+1):
+		sys_print("Season {}".format(season))
+		episodes = get_episode_list(season) + episodes
+		time.sleep(5)
+	return episodes
+
 def sys_print(string):
 	sys.stdout.write("{}\n".format(string))
 	sys.stdout.flush()
