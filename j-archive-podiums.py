@@ -8,7 +8,7 @@ import re
 import csv
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-FOLDER = os.path.join(CURRENT_DIR, 'j-archive-podium-data')
+FOLDER = os.path.join(CURRENT_DIR, 'podium-data')
 
 def main():
 	print(get_episode_list(1))
