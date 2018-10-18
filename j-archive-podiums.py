@@ -34,7 +34,7 @@ def get_episode_list(season):
 				"contestants": episode[1].text.strip(),
 				"info": episode[2].text.strip()
 			}
-			for episode in episodes][::-1]
+			for episode in episodes]
 
 def get_episode_range(start,end):
 	episodes = []
