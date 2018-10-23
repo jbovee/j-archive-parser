@@ -44,6 +44,15 @@ def get_episode_range(start,end):
 		time.sleep(5)
 	return episodes
 
+def get_tourn_ep_list(filename):
+	result = []
+	with open(filename,'r',newline='',encoding='utf-8') as csvfile:
+		reader = csv.reader(csvfile)
+		next(reader, None)
+		for row in reader:
+			result = result + list(range(int(row[0]),int(row[1])+1))
+	return result
+
 def sys_print(string):
 	sys.stdout.write("{}\n".format(string))
 	sys.stdout.flush()
