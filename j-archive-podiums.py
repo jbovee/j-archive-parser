@@ -19,6 +19,14 @@ def create_save_folder():
 		print('Creating %s folder' % FOLDER)
 		os.mkdir(FOLDER)
 
+def parse_winners(episodeId):
+	page = requests.get("http://www.j-archive.com/showgame.php?game_id={}".format(episodeId))
+	pageSoup = BeautifulSoup(page.text, 'lxml')
+	finalScores = [int(score.text.replace('$','').replace(',','')) for score in pageSoup.find('h3', string='Final scores:').findNext('table').find_all('tr')[1].find_all('td')]
+	adjustedScores = [score if score >= 0 else 0 for score in finalScores]
+	maxScore = max(adjustedScores)
+	return [i for i, score in enumerate(adjustedScores) if score == maxScore and score != 0]
+
 def get_episode_list(season):
 	seasonPage = requests.get('http://j-archive.com/showseason.php?season={}'.format(season))
 	seasonSoup = BeautifulSoup(seasonPage.text, 'lxml')
