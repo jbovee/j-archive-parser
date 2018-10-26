@@ -15,7 +15,7 @@ def main():
 	# create_save_folder()
 	listfile = os.path.join(FOLDER, 'episode-list.csv')
 	# write_to_csv(listfile, allEpisodes)
-	tournfile = os.path.join(CURRENT_DIR, 'tournament episodes.csv')
+	tournfile = os.path.join(CURRENT_DIR, 'tournament-episodes.csv')
 	podiumData = get_podium_data(listfile,tournfile)
 	datafile = os.path.join(FOLDER, 'podium-data.csv')
 	write_to_csv(datafile,podiumData)
