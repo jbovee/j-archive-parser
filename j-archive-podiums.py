@@ -15,8 +15,14 @@ def main():
 	# create_save_folder()
 	listfile = os.path.join(FOLDER, 'episode-list.csv')
 	# write_to_csv(listfile, allEpisodes)
-	allEpisodes = read_from_csv(listfile)[::-1]
-	tournEps = get_tourn_ep_list('tournament episodes.csv')
+	tournfile = os.path.join(CURRENT_DIR, 'tournament episodes.csv')
+	podiumData = get_podium_data(listfile,tournfile)
+	datafile = os.path.join(FOLDER, 'podium-data.csv')
+	write_to_csv(datafile,podiumData)
+
+def get_podium_data(episodesFile,tournamentsFile):
+	allEpisodes = read_from_csv(episodesFile)[::-1]
+	tournEps = get_tourn_ep_list(tournamentsFile)
 	results = []
 	episode_i = 0
 	while episode_i < len(allEpisodes)-1:
@@ -51,8 +57,7 @@ def main():
 			"winnerIndices": winnerIndices
 		})
 		episode_i += offset
-	datafile = os.path.join(FOLDER, 'podium-data.csv')
-	write_to_csv(datafile,results)
+	return results
 
 def create_save_folder():
 	if not os.path.isdir(FOLDER):
