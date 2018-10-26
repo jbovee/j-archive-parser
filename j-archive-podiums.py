@@ -22,7 +22,11 @@ def create_save_folder():
 def parse_winners(episodeId):
 	page = requests.get("http://www.j-archive.com/showgame.php?game_id={}".format(episodeId))
 	pageSoup = BeautifulSoup(page.text, 'lxml')
-	finalScores = [int(score.text.replace('$','').replace(',','')) for score in pageSoup.find('h3', string='Final scores:').findNext('table').find_all('tr')[1].find_all('td')]
+	try:
+		finalScores = [int(score.text.replace('$','').replace(',','')) for score in pageSoup.find('h3', string='Final scores:').findNext('table').find_all('tr')[1].find_all('td')]
+	except:
+		print("No final scores section for game with ID {}".format(episodeId))
+		return []
 	adjustedScores = [score if score >= 0 else 0 for score in finalScores]
 	maxScore = max(adjustedScores)
 	return [i for i, score in enumerate(adjustedScores) if score == maxScore and score != 0]
