@@ -11,8 +11,48 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 FOLDER = os.path.join(CURRENT_DIR, 'podium-data')
 
 def main():
-	print(get_episode_list(1))
-	pass
+	# allEpisodes = get_episode_range(1,35)
+	# create_save_folder()
+	listfile = os.path.join(FOLDER, 'episode-list.csv')
+	# write_to_csv(listfile, allEpisodes)
+	allEpisodes = read_from_csv(listfile)[::-1]
+	tournEps = get_tourn_ep_list('tournament episodes.csv')
+	results = []
+	episode_i = 0
+	while episode_i < len(allEpisodes)-1:
+		sys_print("Episode {} out of {}, id no. {}, game no. {}".format(episode_i,len(allEpisodes),allEpisodes[ episode_i ]['gameId'],allEpisodes[ episode_i ]['epNum']))
+		offset = 1
+		currentEp = allEpisodes[ episode_i ]
+		nextEp = allEpisodes[ episode_i+offset ]
+		# Increase offset until next episode is non-tournament
+		while (int(nextEp['epNum']) in tournEps):
+			offset += 1
+			nextEp = allEpisodes[ episode_i+offset ]
+		currentContestants = re.split(r' vs\. ', currentEp['contestants'])
+		winnerIndices = []
+		# Check if episodes are immediately before/after each other
+		# If they are, can use list of contestant names to determine winner(s)
+		# If not, need to request game page and parse winner(s)
+		if int(nextEp['epNum']) == int(currentEp['epNum'])+offset:
+			nextContestants = re.split(r' vs\. ', nextEp['contestants'])
+			champSet = set(currentContestants).intersection(nextContestants)
+			winnerIndices = [i for i, contestant in enumerate(currentContestants) if contestant in champSet]
+		else:
+			winnerIndices = parse_winners(currentEp['gameId'])
+			time.sleep(5)
+		results.append({
+			"gameId": int(currentEp['gameId']),
+			"season": int(currentEp['season']),
+			"epNum": int(currentEp['epNum']),
+			"date": currentEp['date'],
+			"left": currentContestants[0],
+			"middle": currentContestants[1],
+			"right": currentContestants[2],
+			"winnerIndices": winnerIndices
+		})
+		episode_i += offset
+	datafile = os.path.join(FOLDER, 'podium-data.csv')
+	write_to_csv(datafile,results)
 
 def create_save_folder():
 	if not os.path.isdir(FOLDER):
