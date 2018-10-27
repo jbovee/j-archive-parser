@@ -171,7 +171,10 @@ def parse_round(round, table, epNum, airDate):
 				coord = tuple([int(x) for x in (re.search(r'[0-9]_[0-9]', clue.find('td', class_='clue_text').get('id')).group(0).split('_'))])
 				valueRaw = clue.find('td', class_=re.compile('clue_value')).text
 				#Strip down value text to just have number (daily doubles have DD:)
-				value = (int(valueRaw.lstrip('D: $').replace(',','')),)
+				try:
+					value = (int(valueRaw.lstrip('D: $').replace(',','')),)
+				except:
+					value = (-100,)
 				question = clue.find('td', class_='clue_text').text
 				#Answers to questions (both right and wrong) are in hover, each with a class to specify color
 				answer = BeautifulSoup(clue.find('div', onmouseover=True).get('onmouseover'), 'lxml').find('em', class_='correct_response').text
