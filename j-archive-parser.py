@@ -54,7 +54,7 @@ def parse_season(season):
 		#Set up csv writer
 		episodeWriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 		#Write titles to csv file
-		episodeWriter.writerow(['epId', 'epNum', 'airDate', 'extra_info', 'round_name', 'coord', 'category', 'order', 'value', 'daily_double', 'question', 'answer', 'correctAttempts', 'wrongAttempts'])
+		episodeWriter.writerow(['epNum', 'airDate', 'extra_info', 'round_name', 'coord', 'category', 'order', 'value', 'daily_double', 'question', 'answer', 'correctAttempts', 'wrongAttempts'])
 		for file_i in range(len(files)):
 			print('\rSeason {}: Parsing episode {}/{}'.format(season,file_i,len(files)), flush=True)
 			ep = parse_episode(files[file_i])
@@ -71,7 +71,6 @@ def parse_episode(episodeLink):
 	soupEpisode = BeautifulSoup(episode, 'lxml')
 	episode.close()
 
-	epId = re.search(r'game_id=(\d+)', soupEpisode.find('a', string=re.compile('game responses'))['href']).group(1)
 	#Get episode number (different from ID) from page title
 	epNum = re.search(r'#(\d+)', soupEpisode.title.text).group(1)
 	#Get extra info about episode from top of page
@@ -98,21 +97,21 @@ def parse_episode(episodeLink):
 	if hasRoundJ:
 		j_table = soupEpisode.find(id='jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(0, j_table, epId, epNum, airDate, extraInfo))
+		parsedRounds.append(parse_round(0, j_table, epNum, airDate, extraInfo))
 
 	if hasRoundDJ:
 		dj_table = soupEpisode.find(id='double_jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(1, dj_table, epId, epNum, airDate, extraInfo))
+		parsedRounds.append(parse_round(1, dj_table, epNum, airDate, extraInfo))
 
 	if hasRoundFJ:
 		fj_table = soupEpisode.find(id='final_jeopardy_round').find_all(class_='final_round')[0]
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(2, fj_table, epId, epNum, airDate, extraInfo))
+		parsedRounds.append(parse_round(2, fj_table, epNum, airDate, extraInfo))
 	
 	if hasRoundTB:
 		tb_table = soupEpisode.find(id='final_jeopardy_round').find_all(class_='final_round')[1]
-		parsedRounds.append(parse_round(3, tb_table, epId, epNum, airDate, extraInfo))
+		parsedRounds.append(parse_round(3, tb_table, epNum, airDate, extraInfo))
 
 	#Some episodes have pages, but don't have any actual episode content in them
 	if parsedRounds:
@@ -122,7 +121,7 @@ def parse_episode(episodeLink):
 
 #Parse a single round layout (Jeoparyd, Double Jeopardy, Final Jeopardy)
 #Final is different than regular and double. Only has a single clue, and has multiple responses and bets.
-def parse_round(round, table, epId, epNum, airDate, extraInfo):
+def parse_round(round, table, epNum, airDate, extraInfo):
 	roundClues = []
 	if round < 2:
 		#Get list of category names
@@ -161,7 +160,7 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 				category = categories[x]
 				round_name = 'Jeopardy' if round == 0 else 'Double Jeopardy'
 				#Add all retrieved data onto array
-				roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+				roundClues.append([epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 			#Tracking current column
 			x = 0 if x == 5 else x + 1
 	elif round == 2:
@@ -178,7 +177,7 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 		order = 0
 		category = table.find('td', class_='category_name').text
 		round_name = 'Final Jeopardy'
-		roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+		roundClues.append([epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 	else:
 		#Tiebreaker round
 		coord = (1,1)
@@ -192,7 +191,7 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 		order = 0
 		category = table.find('td', class_='category_name').text
 		round_name = 'Tiebreaker'
-		roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+		roundClues.append([epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 	return roundClues
 
 if __name__ == "__main__":
