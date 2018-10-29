@@ -1,6 +1,5 @@
 from __future__ import print_function
 from bs4 import BeautifulSoup
-import requests
 import time
 import lxml
 import sys
@@ -13,8 +12,8 @@ import concurrent.futures as futures
 # Break up CSVs into seasons
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-FOLDER = os.path.join(CURRENT_DIR, "j-archive-csv")
-SECONDS_BETWEEN_REQUESTS = 5
+SITE_FOLDER = os.path.join(CURRENT_DIR, "j-archive archive")
+SAVE_FOLDER = os.path.join(CURRENT_DIR, "j-archive-csv")
 NUM_THREADS = 2
 try:
 	import multiprocessing
@@ -29,25 +28,14 @@ def main():
 
 #Create a folder, if there isn't already one, to save season csv's in
 def create_save_folder():
-    if not os.path.isdir(FOLDER):
-        print("Creating %s folder" % FOLDER)
-        os.mkdir(FOLDER)
+    if not os.path.isdir(SAVE_FOLDER):
+        print("Creating {} folder".format(SAVE_FOLDER))
+        os.mkdir(SAVE_FOLDER)
 
 #Get a list of all seasons from the list season page. Then iterate through list, parsing
 #each season (using multithreading to have, typically, four seasons being parsed at once.)
 def get_all_seasons():
-	#Get list of seasons page
-	seasonsPage = requests.get('http://j-archive.com/listseasons.php')
-	#Soup page with lxml for parsing
-	soupSeasons = BeautifulSoup(seasonsPage.text, 'lxml')
-	#Pattern for obtaining season number/name
-	r = re.compile(r'season=[0-9a-zA-Z]+')
-	#Pattern for verifying a link to a season page
-	r2 = re.compile(r'showseason\.php\?season=')
-
-	#Go through all links in the list seasons page, checking if it a link to a season page
-	#then adding that season name to the array
-	seasons = [r.search(link.get('href')).group(0).split('=')[1] for link in soupSeasons.find_all('a') if r2.match(link.get('href'))][::-1]
+	seasons = sorted([int(re.search(r'(\d+)', d).group(1)) for d in os.listdir(SITE_FOLDER) if os.path.isdir(os.path.join(SITE_FOLDER, d))])
 
 	with futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
 		for season in seasons:
@@ -55,64 +43,39 @@ def get_all_seasons():
 
 def parse_season(season):
 	print('Starting season {}'.format(season))
-	#Get season page
-	episodesPage = requests.get('http://j-archive.com/showseason.php?season='+season)
-	#Soup page with lxml for parsing
-	soupEpisodes = BeautifulSoup(episodesPage.text, 'lxml')
-	#Pattern for obtaining episode id
-	r = re.compile(r'game_id=[0-9]+')
-	#Pattern for verifying a link to an episode page
-	r2 = re.compile(r'http:\/\/www\.j-archive\.com\/showgame\.php\?game_id=[0-9]+')
-
-	#Get all episode ids from links in season page
-	#Go through all links in season page, using second patter to check if is an episode link,
-	#then retrieving episode id with first pattern
-	episodeIds = [r.search(link.get('href')).group(0).split('=')[1] for link in soupEpisodes.find_all('a') if r2.match(link.get('href'))][::-1]
-	#Get any extra info about a game (win streaks, special episodes, etc.)
-	#Extra info was always the only <td> in <tr> with the class 'left_padding'
-	#Probably could've retrieved by getting all <td>'s and using indices
-	extraInfo = [info.get_text() for info in soupEpisodes.find_all('td', class_='left_padded')][::-1]
+	season_folder = os.path.join(SITE_FOLDER, 'season {}'.format(season))
+	files = [os.path.join(season_folder, f) for f in os.listdir(season_folder) if os.path.isfile(os.path.join(season_folder, f))]
 
 	#Name and set up path for csv file in created folder using the name/number of season
-	seasonFile = "j-archive-season-%s.csv" % season
-	saveFile = os.path.join(FOLDER, seasonFile)
+	saveFile = os.path.join(SAVE_FOLDER, 'j-archive-season-{}.csv'.format(season))
 
-	#Be nice to servers
-	time.sleep(SECONDS_BETWEEN_REQUESTS)
 	#Create csv file in write mode with utf-8 encoding
 	with open(saveFile,'w',newline='',encoding='utf-8') as csvfile:
 		#Set up csv writer
 		episodeWriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 		#Write titles to csv file
-		episodeWriter.writerow(['epNum', 'airDate', 'extra_info', 'round_name', 'coord', 'category', 'order', 'value', 'daily_double', 'question', 'answer', 'correctAttempts', 'wrongAttempts'])
-		for i in range(len(episodeIds)):
-			#sys.stdout.write('\rSeason {}: Parsing episode {}/{}'.format(season, i, len(episodeIds)))
-			#sys.stdout.flush()
-			#Value returned from parse_episode is an array with 3 entries (Jeopardy, Double Jeopardy, and Final Jeopardy)
-			ep = parse_episode(episodeIds[i])
-			#Some episodes have pages, but don't have any actual episode content in them
+		episodeWriter.writerow(['epId', 'epNum', 'airDate', 'extra_info', 'round_name', 'coord', 'category', 'order', 'value', 'daily_double', 'question', 'answer', 'correctAttempts', 'wrongAttempts'])
+		for file_i in range(len(files)):
+			print('\rSeason {}: Parsing episode {}/{}'.format(season,file_i,len(files)), flush=True)
+			ep = parse_episode(files[file_i])
 			if ep:
-				#Expand 3 length array of rounds into an array containing every question in those rounds
 				ep = [[[clueElement for clueElement in clue] for clue in round] for round in ep]
 				for round in ep:
 					for question in round:
-						#Add corresponding extra info to question, or add blank space if no extra info
-						question.insert(2, extraInfo[i].replace('\n','').strip()) if extraInfo[i] else question.insert(2, '')
-						#print(question)
-						#Write question to csv file
 						episodeWriter.writerow(question)
 	print('Season {} complete'.format(season))
-	#Be nice to servers
-	time.sleep(SECONDS_BETWEEN_REQUESTS)
 
 def parse_episode(episodeLink):
 	#Get episode page
-	episode = requests.get('http://j-archive.com/showgame.php?game_id='+episodeLink)
-	#Soup page using lxml for parsing
-	soupEpisode = BeautifulSoup(episode.text, 'lxml')
+	episode = open(episodeLink)
+	soupEpisode = BeautifulSoup(episode, 'lxml')
+	episode.close()
 
+	epId = re.search(r'game_id=(\d+)', soupEpisode.find('a', string=re.compile('game responses'))['href']).group(1)
 	#Get episode number (different from ID) from page title
 	epNum = re.search(r'#[0-9]+', soupEpisode.title.text).group(0)[1:]
+	#Get extra info about episode from top of page
+	extraInfo = soupEpisode.find('div', id='game_comments').text
 	#Check for special season names (Super Jeopardy, Trebek Pilots, anything non-number)
 	sj = re.compile(r'Super Jeopardy! show #[0-9]+')
 	if sj.search(soupEpisode.title.text):
@@ -134,20 +97,18 @@ def parse_episode(episodeLink):
 	if hasRoundJ:
 		j_table = soupEpisode.find(id='jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(0, j_table, epNum, airDate))
+		parsedRounds.append(parse_round(0, j_table, epId, epNum, airDate, extraInfo))
 
 	if hasRoundDJ:
 		dj_table = soupEpisode.find(id='double_jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(1, dj_table, epNum, airDate))
+		parsedRounds.append(parse_round(1, dj_table, epId, epNum, airDate, extraInfo))
 
 	if hasRoundFJ:
 		fj_table = soupEpisode.find(id='final_jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
-		parsedRounds.append(parse_round(2, fj_table, epNum, airDate))
+		parsedRounds.append(parse_round(2, fj_table, epId, epNum, airDate, extraInfo))
 
-	#Be nice to servers
-	time.sleep(SECONDS_BETWEEN_REQUESTS)
 	#Some episodes have pages, but don't have any actual episode content in them
 	if parsedRounds:
 		return parsedRounds
@@ -156,7 +117,7 @@ def parse_episode(episodeLink):
 
 #Parse a single round layout (Jeoparyd, Double Jeopardy, Final Jeopardy)
 #Final is different than regular and double. Only has a single clue, and has multiple responses and bets.
-def parse_round(round, table, epNum, airDate):
+def parse_round(round, table, epId, epNum, airDate, extraInfo):
 	roundClues = []
 	if round == 0 or round == 1:
 		#Get list of category names
@@ -195,7 +156,7 @@ def parse_round(round, table, epNum, airDate):
 				category = categories[x]
 				round_name = 'Jeopardy' if round == 0 else 'Double Jeopardy'
 				#Add all retrieved data onto array
-				roundClues.append([epNum, airDate, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+				roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 			#Tracking current column
 			x = 0 if x == 5 else x + 1
 	else:
@@ -212,7 +173,7 @@ def parse_round(round, table, epNum, airDate):
 		order = 0
 		category = table.find('td', class_='category_name').text
 		round_name = 'Final Jeopardy'
-		roundClues.append([epNum, airDate, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+		roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 	return roundClues
 
 if __name__ == "__main__":
