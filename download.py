@@ -41,12 +41,13 @@ def download_season(season):
 	episodeRe = re.compile(r'http:\/\/www\.j-archive\.com\/showgame\.php\?game_id=[0-9]+')
 	episodeLinks = [link for link in seasonSoup.find_all('a') if episodeRe.match(link.get('href'))][::-1]
 	for link in episodeLinks:
-		episodeId = epIdRe.search(link['href']).group(1)
-		episodeNumber = epNumRe.search(link.text.strip()).group(1)
 		gameFile = os.path.join(season_folder,'{}.html'.format(episodeNumber))
-		gamePage = requests.get('http://j-archive.com/showgame.php?game_id={}'.format(episodeId))
-		open(gameFile, 'wb').write(gamePage.content)
-		time.sleep(5)
+		if not os.path.isfile(gameFile):
+			episodeId = epIdRe.search(link['href']).group(1)
+			episodeNumber = epNumRe.search(link.text.strip()).group(1)
+			gamePage = requests.get('http://j-archive.com/showgame.php?game_id={}'.format(episodeId))
+			open(gameFile, 'wb').write(gamePage.content)
+			time.sleep(5)
 	sys_print('Season {} finished'.format(season))
 
 def sys_print(string):
