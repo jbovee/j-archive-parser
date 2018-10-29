@@ -24,7 +24,8 @@ except (ImportError, NotImplementedError):
 
 def main():
 	create_save_folder()
-	get_all_seasons()
+	# get_all_seasons()
+	parse_season(1)
 
 #Create a folder, if there isn't already one, to save season csv's in
 def create_save_folder():
@@ -66,30 +67,39 @@ def parse_season(season):
 	print('Season {} complete'.format(season))
 
 def parse_episode(episodeLink):
+	print("1", flush=True)
 	#Get episode page
 	episode = open(episodeLink)
 	soupEpisode = BeautifulSoup(episode, 'lxml')
 	episode.close()
+	print("2", flush=True)
 
 	epId = re.search(r'game_id=(\d+)', soupEpisode.find('a', string=re.compile('game responses'))['href']).group(1)
+	print("3", flush=True)
 	#Get episode number (different from ID) from page title
-	epNum = re.search(r'#[0-9]+', soupEpisode.title.text).group(0)[1:]
+	epNum = re.search(r'#(\d+)', soupEpisode.title.text).group(1)
+	print("4", flush=True)
 	#Get extra info about episode from top of page
 	extraInfo = soupEpisode.find('div', id='game_comments').text
+	print("5", flush=True)
 	#Check for special season names (Super Jeopardy, Trebek Pilots, anything non-number)
-	sj = re.compile(r'Super Jeopardy! show #[0-9]+')
+	sj = re.compile(r'(Super Jeopardy!) show #(\d+)')
 	if sj.search(soupEpisode.title.text):
-		epNum = sj.search(soupEpisode.title.text).group(0).replace('show #', '')
-	trbk = re.compile(r'Trebek pilot #[0-9]+')
+		epNum = ' '.join(sj.search(soupEpisode.title.text).groups())
+	print("6", flush=True)
+	trbk = re.compile(r'(Trebek pilot) #(\d+)')
 	if trbk.search(soupEpisode.title.text):
-		epNum = trbk.search(soupEpisode.title.text).group(0).replace('#', '')
+		epNum = ' '.join(trbk.search(soupEpisode.title.text).groups())
+	print("7", flush=True)
 	#Get episode air date from page title (format YYYY-MM-DD)
-	airDate = re.search(r'([0-9]{4})[-]([0-9]{2})[-]([0-9]{2})', soupEpisode.title.text).group(0)
+	airDate = re.search(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', soupEpisode.title.text).group()
+	print("8", flush=True)
 
 	#Booleans to check if page has each round type
 	hasRoundJ = True if soupEpisode.find(id='jeopardy_round') else False
 	hasRoundDJ = True if soupEpisode.find(id='double_jeopardy_round') else False
 	hasRoundFJ = True if soupEpisode.find(id='final_jeopardy_round') else False
+	print("9", flush=True)
 
 	parsedRounds = []
 
@@ -98,16 +108,19 @@ def parse_episode(episodeLink):
 		j_table = soupEpisode.find(id='jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
 		parsedRounds.append(parse_round(0, j_table, epId, epNum, airDate, extraInfo))
+	print("10", flush=True)
 
 	if hasRoundDJ:
 		dj_table = soupEpisode.find(id='double_jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
 		parsedRounds.append(parse_round(1, dj_table, epId, epNum, airDate, extraInfo))
+	print("11", flush=True)
 
 	if hasRoundFJ:
 		fj_table = soupEpisode.find(id='final_jeopardy_round')
 		#Pass epNum and airDate to so all info can be added into array as a question at once
 		parsedRounds.append(parse_round(2, fj_table, epId, epNum, airDate, extraInfo))
+	print("12", flush=True)
 
 	#Some episodes have pages, but don't have any actual episode content in them
 	if parsedRounds:
@@ -129,7 +142,7 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 			if exists:
 				#Clue text <td> has id attribute in the format clue_round_x_y, one indexed
 				#Extract coordinates from id text
-				coord = tuple([int(x) for x in (re.search(r'[0-9]_[0-9]', clue.find('td', class_='clue_text').get('id')).group(0).split('_'))])
+				coord = tuple([int(x) for x in re.search(r'(\d)_(\d)', clue.find('td', class_='clue_text').get('id')).groups()])
 				valueRaw = clue.find('td', class_=re.compile('clue_value')).text
 				#Strip down value text to just have number (daily doubles have DD:)
 				try:
