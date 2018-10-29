@@ -90,6 +90,7 @@ def parse_episode(episodeLink):
 	hasRoundJ = True if soupEpisode.find(id='jeopardy_round') else False
 	hasRoundDJ = True if soupEpisode.find(id='double_jeopardy_round') else False
 	hasRoundFJ = True if soupEpisode.find(id='final_jeopardy_round') else False
+	hasRoundTB = True if len(soupEpisode.find_all(class_='final_round')) > 1 else False
 
 	parsedRounds = []
 
@@ -105,9 +106,13 @@ def parse_episode(episodeLink):
 		parsedRounds.append(parse_round(1, dj_table, epId, epNum, airDate, extraInfo))
 
 	if hasRoundFJ:
-		fj_table = soupEpisode.find(id='final_jeopardy_round')
+		fj_table = soupEpisode.find(id='final_jeopardy_round').find_all(class_='final_round')[0]
 		#Pass epNum and airDate to so all info can be added into array as a question at once
 		parsedRounds.append(parse_round(2, fj_table, epId, epNum, airDate, extraInfo))
+	
+	if hasRoundTB:
+		tb_table = soupEpisode.find(id='final_jeopardy_round').find_all(class_='final_round')[1]
+		parsedRounds.append(parse_round(3, tb_table, epId, epNum, airDate, extraInfo))
 
 	#Some episodes have pages, but don't have any actual episode content in them
 	if parsedRounds:
@@ -119,7 +124,7 @@ def parse_episode(episodeLink):
 #Final is different than regular and double. Only has a single clue, and has multiple responses and bets.
 def parse_round(round, table, epId, epNum, airDate, extraInfo):
 	roundClues = []
-	if round == 0 or round == 1:
+	if round < 2:
 		#Get list of category names
 		categories = [cat.text for cat in table.find_all('td', class_='category_name')]
 		#Variable for tracking which column (category) currently getting clues from
@@ -159,7 +164,7 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 				roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 			#Tracking current column
 			x = 0 if x == 5 else x + 1
-	else:
+	elif round == 2:
 		#Final Jeopardy
 		coord = (1,1)
 		rawValue = [x.text for x in BeautifulSoup(table.find('div', onmouseover=True).get('onmouseover'), 'lxml').find_all(lambda tag: tag.name == 'td' and not tag.attrs)]
@@ -173,6 +178,20 @@ def parse_round(round, table, epId, epNum, airDate, extraInfo):
 		order = 0
 		category = table.find('td', class_='category_name').text
 		round_name = 'Final Jeopardy'
+		roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
+	else:
+		#Tiebreaker round
+		coord = (1,1)
+		value = ()
+		question = table.find('td', id='clue_TB').text
+		answer = BeautifulSoup(table.find('div', onmouseover=True).get('onmouseover'), 'lxml').find('em').text
+		daily_double = False
+		wrongAttempts = len(BeautifulSoup(table.find('div', onmouseover=True).get('onmouseover'), 'lxml').find_all('td', class_='wrong'))
+		correctAttempts = len(BeautifulSoup(table.find('div', onmouseover=True).get('onmouseover'), 'lxml').find_all('td', class_='right'))
+		totalAttemps = wrongAttempts + correctAttempts
+		order = 0
+		category = table.find('td', class_='category_name').text
+		round_name = 'Tiebreaker'
 		roundClues.append([epId, epNum, airDate, extraInfo, round_name, coord, category, order, value, daily_double, question, answer, correctAttempts, wrongAttempts])
 	return roundClues
 
