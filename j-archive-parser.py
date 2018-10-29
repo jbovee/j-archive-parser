@@ -67,7 +67,7 @@ def parse_season(season):
 
 def parse_episode(episodeLink):
 	#Get episode page
-	episode = open(episodeLink)
+	episode = open(episodeLink, encoding="utf-8")
 	soupEpisode = BeautifulSoup(episode, 'lxml')
 	episode.close()
 
